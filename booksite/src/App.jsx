@@ -56,6 +56,7 @@ const floatingBookItems = floatingBooks.map((book, index) => {
 
 function App() {
   const [query, setQuery] = useState("");
+  const [selectedBook, setSelectedBook] = useState(null);
   const textareaRef = useRef(null);
 
   const resizeTextarea = (textarea) => {
@@ -80,9 +81,23 @@ function App() {
     console.log("Поиск:", query);
   };
 
+  const handleBookClick = (book) => {
+    setSelectedBook(book);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedBook(null);
+  };
+
+  const handleModalBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleCloseModal();
+    }
+  };
+
   return (
     <div className="page">
-      <div className="background-floating">
+      <div className={`background-floating ${selectedBook ? "paused" : ""}`}>
         {floatingBookItems.map((book) => (
           <div
             key={book.id}
@@ -98,6 +113,7 @@ function App() {
               "--height": `${book.height}px`,
             }}
             title={`${book.title} — ${book.author}`}
+            onClick={() => handleBookClick(book)}
           >
             {book.coverUrl ? (
               <img
@@ -140,6 +156,32 @@ function App() {
           Найти
         </button>
       </form>
+
+      {selectedBook && (
+        <div className="modal-backdrop" onClick={handleModalBackdropClick}>
+          <div className="modal-content">
+            <button className="modal-close" onClick={handleCloseModal}>×</button>
+            <div className="modal-body">
+              {selectedBook.coverUrl ? (
+                <img
+                  className="modal-cover"
+                  src={selectedBook.coverUrl}
+                  alt={selectedBook.title}
+                />
+              ) : (
+                <div className="modal-cover-placeholder">📘</div>
+              )}
+              <div className="modal-info">
+                <h2>{selectedBook.title}</h2>
+                <p className="modal-author">{selectedBook.author}</p>
+                <p className="modal-description">
+                  Нажми для более подробной информации
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
