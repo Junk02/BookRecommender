@@ -1,3 +1,2 @@
-from llm import get_description
-
-print(get_description('Посторонний', 'Альбер Камю'))
+import requests
+print(requests.get("https://api.ipify.org").text)

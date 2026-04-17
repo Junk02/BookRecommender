@@ -1,23 +1,28 @@
 import time
 import pandas as pd
+import winsound  # встроенная библиотека Windows
 from llm import get_description
 
-INPUT_CSV = "books.csv"
-OUTPUT_CSV = "books.csv"
+INPUT_CSV = "books_with_covers.csv"
+OUTPUT_CSV = "books_with_covers.csv"
 
-MAX_TO_PROCESS = 100   # лимит генераций за запуск
+MAX_TO_PROCESS = 200
+
+
+def beep_error():
+    # громкий системный звук
+    winsound.Beep(1000, 700)
+    winsound.Beep(700, 700)
 
 
 def main():
     df = pd.read_csv(INPUT_CSV)
 
-    # если колонки description нет — создаём
     if "description" not in df.columns:
         df["description"] = ""
 
     total = len(df)
 
-    # ---------- ШАГ 1: считаем уже существующие описания ----------
     def has_desc(x: str) -> bool:
         if not isinstance(x, str):
             return False
@@ -29,12 +34,10 @@ def main():
     print(f"Всего записей: {total}")
     print(f"Уже есть описаний: {already_done}")
 
-    generated = 0  # сколько новых описаний мы создали
+    generated = 0
 
-    # ---------- ШАГ 2: основной цикл ----------
     for idx, row in df.iterrows():
 
-        # если достигли лимита генераций — стоп
         if generated >= MAX_TO_PROCESS:
             print(f"\n[INFO] Достигнут лимит генераций {MAX_TO_PROCESS}. Останавливаюсь.")
             break
@@ -43,7 +46,6 @@ def main():
         authors = str(row.get("authors", "")).strip()
         existing = str(row.get("description", "")).strip().lower()
 
-        # пропускаем, если описание уже есть
         if has_desc(existing):
             continue
 
@@ -53,8 +55,8 @@ def main():
 
         print(f"[{generated+1}/{MAX_TO_PROCESS}] Генерирую: «{title}»")
 
-        # пробуем несколько раз
         desc = None
+
         for attempt in range(3):
             try:
                 desc = get_description(title, authors)
@@ -64,25 +66,28 @@ def main():
                     break
 
             except Exception as e:
-                print(f"[WARN] Ошибка LLM: {repr(e)}. Попытка {attempt+1}/3")
-                time.sleep(3)
+                print(f"[ERROR] Ошибка LLM: {repr(e)}")
+                print("[STOP] Останавливаю программу.")
+                beep_error()
+                return  # ← мгновенная остановка программы
+
+            time.sleep(2)
 
         if not desc:
-            print(f"[FAIL] Не удалось получить описание для «{title}»")
-            continue
+            print(f"[ERROR] Не удалось получить описание для «{title}»")
+            print("[STOP] Останавливаю программу.")
+            beep_error()
+            return
 
-        # записываем описание
         df.at[idx, "description"] = desc
         generated += 1
         print(f"[OK] Описание получено")
 
-        # промежуточное сохранение
         df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
         print(f"[SAVE] Промежуточное сохранение ({generated} новых описаний)")
 
         time.sleep(1)
 
-    # финальное сохранение
     df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
     print(f"\nГотово! Создано новых описаний: {generated}")
     print(f"Файл сохранён: {OUTPUT_CSV}")

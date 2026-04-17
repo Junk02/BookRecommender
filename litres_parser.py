@@ -1,78 +1,72 @@
-from time import sleep
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import urllib.parse
+import time
 
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import quote_plus
+def normalize(s: str) -> str:
+    return s.lower().strip()
 
-def find_oz_book_url(title: str):
-    query = quote_plus(title)
-    url = f"https://oz.by/?digiSearch=true&term={title}&params=%7Csort%3DDEFAULT"
+def find_cover_litres_selenium(title: str, author: str = "") -> str | None:
+    query = urllib.parse.quote(f"{title} {author}".strip())
+    url = f"https://www.litres.ru/search/?q={query}"
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
+    options = webdriver.ChromeOptions()
+    # options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print("Ошибка поиска:", response.status_code)
+    prefs = {"profile.managed_default_content_settings.images": 2}
+    options.add_experimental_option("prefs", prefs)
+
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+    try:
+        driver.get(url)
+
+        wait = WebDriverWait(driver, 3)
+
+        # Ждём появления хотя бы одного результата
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="art__wrapper"]')))
+
+        # Берём все результаты
+        results = driver.find_elements(By.CSS_SELECTOR, '[data-testid="art__wrapper"]')
+
+        target_title = normalize(title)
+        target_author = normalize(author)
+
+        for block in results:
+            # Название
+            try:
+                title_el = block.find_element(By.CSS_SELECTOR, '[data-testid="art__title"]')
+                found_title = normalize(title_el.text)
+            except:
+                continue
+
+            # Автор
+            try:
+                author_el = block.find_element(By.CSS_SELECTOR, '[data-testid="art__authorName--link"]')
+                found_author = normalize(author_el.text)
+            except:
+                found_author = ""
+
+            # Проверка совпадения
+            if target_title in found_title and (target_author in found_author or not target_author):
+                # Берём обложку
+                img = block.find_element(By.CSS_SELECTOR, 'img[data-testid="adaptiveCover__img"]')
+                cover_url = img.get_attribute("src")
+                driver.quit()
+                return cover_url
+
+        driver.quit()
         return None
 
-    print(url)
-    sleep(3)
-    soup = BeautifulSoup(response.text, "html.parser")
-    print(soup)
-
-    # Ищем первый digi-product
-    product = soup.select_one(".digi-product[data-href]")
-    if not product:
-        print("Книга не найдена")
+    except Exception as e:
+        print(f"[ERROR] Selenium LitRes: {e}")
+        driver.quit()
         return None
 
-    href = product.get("data-href")
-    return "https://oz.by" + href
-
-def get_oz_annotation(url: str):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
-
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print("Ошибка запроса:", response.status_code)
-        return None
-
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    # Возможные блоки с аннотацией
-    selectors = [
-        ".b-description__text",
-        ".b-description__sub",          # ← ТВОЙ БЛОК
-        "#truncatedBlock",              # ← ТВОЙ БЛОК
-        ".b-product-description",
-        ".b-product-info__text",
-        ".b-product__description",
-        '[itemprop="description"]',
-        ".b-product-about__text",
-    ]
-
-    for sel in selectors:
-        block = soup.select_one(sel)
-        if block:
-            text = block.get_text(" ", strip=True)
-            if text:
-                return text
-
-    print("Аннотация не найдена")
-    return None
-
-
-# Пример использования
-title = 'Посторонний'
-url = find_oz_book_url(title)
-annotation = get_oz_annotation(url)
-
-print('URL:')
-print(url)
-
-print("Аннотация:")
-print(annotation)
+print(find_cover_litres_selenium("Святая ложь", "Александр Куприн"))
