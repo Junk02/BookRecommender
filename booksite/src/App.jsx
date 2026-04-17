@@ -398,6 +398,9 @@ function App() {
                     <div
                       key={index}
                       className="search-result-item"
+                      style={{
+                        animation: `cardAppear 0.4s ease ${index * 0.08}s both`
+                      }}
                       onClick={() => setSelectedBook(normalizedBook)}
                     >
                       <img
