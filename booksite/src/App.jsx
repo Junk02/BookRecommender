@@ -1,4 +1,32 @@
 import React, { useEffect, useRef, useState } from "react";
+// Для роутинга
+import { useState as useReactState } from "react";
+// Минималистичная SVG-звезда (уже есть выше)
+
+// Минималистичная, ровная, мягкая SVG-звезда
+function Star({ filled, onClick, className, title }) {
+  return (
+    <svg
+      onClick={onClick}
+      className={className}
+      width="28"
+      height="28"
+      viewBox="0 0 28 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ cursor: onClick ? 'pointer' : 'default', verticalAlign: 'middle', transition: 'filter 0.18s' }}
+      title={title}
+    >
+      <path
+        d="M14 4.5c.38-1.1 1.62-1.1 2 0l2.1 6.1c.16.47.59.8 1.09.83l6.3.45c1.13.08 1.6 1.45.75 2.19l-5 4.2c-.4.34-.56.89-.43 1.4l1.6 6.1c.29 1.11-.91 2-1.85 1.36l-5.2-3.5a1.1 1.1 0 0 0-1.2 0l-5.2 3.5c-.94.64-2.14-.25-1.85-1.36l1.6-6.1c.13-.51-.03-1.06-.43-1.4l-5-4.2c-.85-.74-.38-2.11.75-2.19l6.3-.45c.5-.03.93-.36 1.09-.83L14 4.5z"
+        fill={filled ? '#FFD600' : 'none'}
+        stroke="#C2B280"
+        strokeWidth="1.2"
+        style={{ filter: filled ? 'drop-shadow(0 2px 8px #ffe06688)' : 'none', transition: 'filter 0.18s' }}
+      />
+    </svg>
+  );
+}
 
 const BOOKS_COUNT = 15;
 const DEFAULT_WIDTH = 84;
@@ -112,7 +140,32 @@ function App() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('favorites') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const textareaRef = useRef(null);
+  // Простая реализация "роутинга" (main/favorites)
+  const [page, setPage] = useState('main');
+  // Сохранять избранное в localStorage
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  // Проверка, избранная ли книга
+  const isFavorite = (id) => favorites.includes(String(id));
+
+  // Переключить избранное
+  const toggleFavorite = (id) => {
+    setFavorites((prev) =>
+      prev.includes(String(id))
+        ? prev.filter((fid) => fid !== String(id))
+        : [...prev, String(id)]
+    );
+  };
 
   // Resize textarea
   useEffect(() => {
@@ -227,103 +280,159 @@ function App() {
 
   return (
     <div className="page">
-      <div className={`background-floating ${selectedBook ? "paused" : ""}`}>
-        {floatingBooks.map((book, index) => (
-          <div
-            key={book.slotId}
-            className={`book-float ${book.direction}`}
-            style={{
-              "--x": book.x,
-              "--delay": book.delay,
-              "--duration": book.duration,
-              "--sway": book.sway,
-              "--start-rotate": book.startRotate,
-              "--end-rotate": book.endRotate,
-              "--width": `${book.width}px`,
-              "--height": `${book.height}px`,
-            }}
-            onAnimationIteration={() => replaceBook(index)}
-            onClick={() => setSelectedBook(book)}
-          >
-            <img
-              className="book-cover"
-              src={book.coverUrl}
-              alt={book.title}
-              loading="lazy"
-              onError={(e) => handleImageError(e, book.id)}
-            />
-
-            <span className="book-tooltip">
-              {book.title}
-              <span className="book-author">{book.author}</span>
-            </span>
+      {page === 'main' && (
+        <>
+          <div className={`background-floating ${selectedBook ? "paused" : ""}`}>
+            {floatingBooks.map((book, index) => (
+              <div
+                key={book.slotId}
+                className={`book-float ${book.direction}`}
+                style={{
+                  "--x": book.x,
+                  "--delay": book.delay,
+                  "--duration": book.duration,
+                  "--sway": book.sway,
+                  "--start-rotate": book.startRotate,
+                  "--end-rotate": book.endRotate,
+                  "--width": `${book.width}px`,
+                  "--height": `${book.height}px`,
+                }}
+                onAnimationIteration={() => replaceBook(index)}
+                onClick={() => setSelectedBook(book)}
+              >
+                <img
+                  className="book-cover"
+                  src={book.coverUrl}
+                  alt={book.title}
+                  loading="lazy"
+                  onError={(e) => handleImageError(e, book.id)}
+                />
+                <span className="book-tooltip">
+                  {book.title}
+                  <span className="book-author">{book.author}</span>
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <form
-        className="search-container"
-        onSubmit={handleSearch}
-      >
-        <textarea
-          ref={textareaRef}
-          className="search-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Опиши, какие книги ты ищешь..."
-          rows={1}
-          disabled={isLoading}
-        />
-        <button className="search-button" disabled={isLoading}>
-          {isLoading ? "Поиск..." : "Найти"}
-        </button>
-      </form>
-
-      {selectedBook && (
-        <div className="modal-backdrop" onClick={() => setSelectedBook(null)}>
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
+          <form
+            className="search-container"
+            onSubmit={handleSearch}
           >
-            <button className="modal-close" onClick={() => setSelectedBook(null)}>×</button>
+            <textarea
+              ref={textareaRef}
+              className="search-input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Опиши, какие книги ты ищешь..."
+              rows={1}
+              disabled={isLoading}
+            />
+            <button className="search-button" disabled={isLoading}>
+              {isLoading ? "Поиск..." : "Найти"}
+            </button>
+          </form>
 
-            <div className="modal-body">
-              <img
-                className="modal-cover"
-                src={selectedBook.coverUrl}
-                onError={(e) => handleImageError(e, selectedBook.id)}
-                alt=""
-              />
+          {/* Кнопка избранного в правом нижнем углу */}
+          <button
+            className="favorites-fab"
+            onClick={() => setPage('favorites')}
+            title="Избранные книги"
+          >
+            <span className="favorites-fab-center">
+              <Star filled={favorites.length > 0} />
+            </span>
+          </button>
 
-              <div className="modal-info">
-                <h2>{selectedBook.title}</h2>
-                <p className="modal-author">{selectedBook.author}</p>
-                <p className="modal-description">{selectedBook.description}</p>
-                <p className="modal-debug">Обложка: {selectedBook.coverUrl}</p>
+          {selectedBook && (
+            <div className="modal-backdrop" onClick={() => setSelectedBook(null)}>
+              <div
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+                style={{ position: 'relative' }}
+              >
+                <button className="modal-close" onClick={() => setSelectedBook(null)}>×</button>
+                {/* Кнопка избранного в углу карточки */}
+                <span
+                  className="star-favorite-modal"
+                  onClick={() => toggleFavorite(selectedBook.id)}
+                  title={isFavorite(selectedBook.id) ? 'Убрать из избранного' : 'В избранное'}
+                >
+                  <span className="star-favorite-center">
+                    <Star filled={isFavorite(selectedBook.id)} />
+                  </span>
+                </span>
+                <div className="modal-body">
+                  <img
+                    className="modal-cover"
+                    src={selectedBook.coverUrl}
+                    onError={(e) => handleImageError(e, selectedBook.id)}
+                    alt=""
+                  />
+                  <div className="modal-info">
+                    <h2>{selectedBook.title}</h2>
+                    <p className="modal-author">{selectedBook.author}</p>
+                    <p className="modal-description">{selectedBook.description}</p>
+                    <p className="modal-debug">Обложка: {selectedBook.coverUrl}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+
+          {searchResults.length > 0 && (
+            <div className="search-results-container">
+              <div className="search-results-header">
+                <h3>Найдено {searchResults.length} книг</h3>
+                <button 
+                  className="close-results-btn"
+                  onClick={() => setSearchResults([])}
+                >
+                  Закрыть
+                </button>
+              </div>
+              <div className="search-results-grid">
+                {searchResults.map((book, index) => {
+                  const normalizedBook = normalizeBookRow(book);
+                  return (
+                    <div
+                      key={index}
+                      className="search-result-item"
+                      onClick={() => setSelectedBook(normalizedBook)}
+                    >
+                      <img
+                        src={normalizedBook.coverUrl}
+                        alt={normalizedBook.title}
+                        onError={(e) => handleImageError(e, normalizedBook.id)}
+                      />
+                      <div className="result-info">
+                        <p className="result-title">{normalizedBook.title}</p>
+                        <p className="result-author">{normalizedBook.author}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {searchResults.length > 0 && (
-        <div className="search-results-container">
-          <div className="search-results-header">
-            <h3>Найдено {searchResults.length} книг</h3>
-            <button 
-              className="close-results-btn"
-              onClick={() => setSearchResults([])}
-            >
-              Закрыть
-            </button>
-          </div>
-          <div className="search-results-grid">
-            {searchResults.map((book, index) => {
+      {page === 'favorites' && (
+        <div className="favorites-page">
+          <button className="favorites-back" onClick={() => setPage('main')} title="Назад на главную">←</button>
+          <h2 className="favorites-title">Избранные книги</h2>
+          <div className="favorites-count-onpage">В избранном: {favorites.length}</div>
+          <div className="favorites-grid">
+            {favorites.length === 0 && <div className="favorites-empty">Нет избранных книг</div>}
+            {favorites.map(fid => {
+              const book = booksData.find(b => String(b.id) === String(fid));
+              if (!book) return null;
               const normalizedBook = normalizeBookRow(book);
               return (
                 <div
-                  key={index}
-                  className="search-result-item"
+                  key={fid}
+                  className="favorites-item"
                   onClick={() => setSelectedBook(normalizedBook)}
                 >
                   <img
@@ -331,14 +440,48 @@ function App() {
                     alt={normalizedBook.title}
                     onError={(e) => handleImageError(e, normalizedBook.id)}
                   />
-                  <div className="result-info">
-                    <p className="result-title">{normalizedBook.title}</p>
-                    <p className="result-author">{normalizedBook.author}</p>
+                  <div className="favorites-info">
+                    <p className="favorites-title">{normalizedBook.title}</p>
+                    <p className="favorites-author">{normalizedBook.author}</p>
                   </div>
                 </div>
               );
             })}
           </div>
+          {/* Модалка для книги из избранного */}
+          {selectedBook && (
+            <div className="modal-backdrop" onClick={() => setSelectedBook(null)}>
+              <div
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+                style={{ position: 'relative' }}
+              >
+                <button className="modal-close" onClick={() => setSelectedBook(null)}>×</button>
+                {/* Кнопка избранного в углу карточки */}
+                <span
+                  className="star-favorite-modal"
+                  onClick={() => toggleFavorite(selectedBook.id)}
+                  title={isFavorite(selectedBook.id) ? 'Убрать из избранного' : 'В избранное'}
+                >
+                  <Star filled={isFavorite(selectedBook.id)} />
+                </span>
+                <div className="modal-body">
+                  <img
+                    className="modal-cover"
+                    src={selectedBook.coverUrl}
+                    onError={(e) => handleImageError(e, selectedBook.id)}
+                    alt=""
+                  />
+                  <div className="modal-info">
+                    <h2>{selectedBook.title}</h2>
+                    <p className="modal-author">{selectedBook.author}</p>
+                    <p className="modal-description">{selectedBook.description}</p>
+                    <p className="modal-debug">Обложка: {selectedBook.coverUrl}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

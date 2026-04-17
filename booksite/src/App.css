@@ -1,3 +1,173 @@
+.favorites-fab-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.favorites-fab svg {
+  width: 32px;
+  height: 32px;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+.star-favorite-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+.star-favorite-modal svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+/* Кнопка избранного (FAB) */
+/* FAB избранного */
+.favorites-fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 1001;
+  background: #fffbe5;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: box-shadow 0.18s, background 0.18s;
+  padding: 0;
+}
+.favorites-fab:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,0.16);
+  background: #fff7c2;
+}
+.favorites-fab svg {
+  width: 32px;
+  height: 32px;
+  display: block;
+  margin: auto;
+}
+
+/* Количество избранных на странице */
+.favorites-count-onpage {
+  color: #8b7355;
+  font-size: 18px;
+  margin-bottom: 18px;
+  margin-top: -10px;
+  text-align: center;
+}
+
+/* Страница избранного */
+.favorites-page {
+  width: 100vw;
+  min-height: 100vh;
+  background: #f3eee7;
+  padding: 48px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+}
+.favorites-back {
+  position: absolute;
+  left: 32px;
+  top: 32px;
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #8b7355;
+  cursor: pointer;
+  z-index: 11;
+}
+.favorites-title {
+  margin: 0 0 24px 0;
+  font-size: 28px;
+  color: #4a3f35;
+  font-weight: 700;
+}
+.favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 28px;
+  width: 100%;
+  max-width: 1100px;
+  padding: 0 32px 32px 32px;
+  margin-bottom: 32px;
+}
+.favorites-item {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  padding: 18px 12px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: box-shadow 0.16s, transform 0.13s;
+}
+.favorites-item:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+  transform: translateY(-3px) scale(1.03);
+}
+.favorites-item img {
+  width: 110px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.favorites-info {
+  text-align: center;
+}
+.favorites-info .favorites-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4a3f35;
+  margin: 0 0 6px 0;
+}
+.favorites-info .favorites-author {
+  font-size: 13px;
+  color: #8b7355;
+  margin: 0;
+}
+.favorites-empty {
+  color: #b0a18b;
+  font-size: 18px;
+  margin: 48px auto;
+  grid-column: 1/-1;
+}
+/* Кнопка избранного в модалке */
+.star-favorite-modal {
+  position: absolute;
+  top: 18px;
+  right: 54px;
+  z-index: 10;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  padding: 3px;
+  transition: background 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.star-favorite-modal:hover {
+  background: #fffbe5;
+}
+.star-favorite-modal svg {
+  display: block;
+  margin: auto;
+}
 * {
   box-sizing: border-box;
 }
